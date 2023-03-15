@@ -1,0 +1,20 @@
+# Lectures
+## Week 1 - Introduction
+### Supervised
+Outcome measurement Y and vector of p predictor measurements, training data are observations of such measurements with known responses. Can be classification or regression.
+
+### Unsupervised
+No outcome variable, just set of predictors measured on a set of samples. Find groups of samples that behave similarly. Find combinations of features with the most variation. Understand and interpret different clusters. Research about the unknown based on observation alone! 
+
+### Regression
+Y = f(X) + e, where X = (X1,X2,X3), the predictors
+f(x) = f(x1,x2,x3) = E[Y|X1=x1,X2=x2,X3=x3] = E[Y|X=x], minimizing error (mean-squared prediction error) which can be represented as E[(Y-g(X))^2|X=x]. e = Y - f(x) is irreducible error or variance (due to predicting a range), but ability to produce a better model has reducible error.
+
+### Model performance and error
+Mean squared error (MSE): mean of (observed value - estimated value)^2. Training data and test data. Reduction of error of test data has an optimum point i.e. continuing to improve test performance results in overfitting for new data.
+
+
+
+```{R}
+
+```
