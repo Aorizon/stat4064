@@ -16,3 +16,6 @@ library(ggplot2)
 library(patchwork)
 library(reshape2)
 library(ISLR)
+
+#Load IRIS data
+df = read.csv('C:/repos/stat4064/data/raw/irisdata.csv', header = TRUE, sep = ',')
