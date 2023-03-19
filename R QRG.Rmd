@@ -1,0 +1,756 @@
+---
+title: "R QRG"
+output: html_notebook
+---
+ML & Stats Models
+```{r}
+#LDA (linear discriminatory analysis
+library(MASS)
+lda_model <- lda(Group~ acceleration+displacement+horsepower+weight, data=train_4))
+
+#MLR (multiple linear regression)
+
+```
+
+Train and test models
+```{r}
+#Split dataset into train and test subsets
+dt = sort(sample(nrow(autos_4), nrow(autos_4)*.7))
+train_4<-autos_4[dt,]
+test_4<-autos_4[-dt,]
+```
+
+Data importing
+```{r}
+read.csv(), read.csv2(), read.tsv(), read.delim()
+skip = n - skip rows
+# A comment I want to skip 
+col_names = FALSE
+col_names = c("x", "y", "z")
+na = "<VALUE OR PLACEHOLDER>"
+data.table::fread() - speeeedy table read
+parse_*() - character vector -> specialised vector e.g. logical, integer, date
+col_*() - corresponding col function for all parse functions
+str(parse_date(c("2010-01-01", "1979-10-14")))
+problems() - debug parsing function failure
+guess_encoding() - UTF-8, Latin1, etc.
+guess_parser() - guess character vector
+parse_guess() - guess column
+problems() and stop_for_problems()
+
+challenge <- read_csv()
+  readr_example("challenge.csv"), 
+  col_types = cols(
+    x = col_double(),
+    y = col_logical()
+  )
+)
+  challenge2 <- read_csv(readr_example("challenge.csv"), 
+    col_types = cols(.default = col_character())
+  )
+type_convert(df) - convert table with loaded in with character columns
+n_max() - 10k-100k (large file), 1k (small file)
+
+read_lines() or read_file() - read into vector of lines or of length 1
+
+Writing a file:
+write_*()
+write_rds() and read_rds() - from readRDS() and saveRDS() - saved in custom binary format
+
+#Variable types
+is.<TYPE>() #check if variable is of type <TYPE>
+as.<TYPE>()#convert variable to type <TYPE>
+
+```
+
+Tidy data:
+```{r}
+Pivoting:
+pivot_longer() - rows are columns (increase no. rows)
+pivot_wider() - columns are rows (increase no. cols)
+e.g. pivot_longer(c(`1999`, `2000`), names_to = "year", values_to = "cases")
+separate() - one col contains multiple variables 
+e.g. separate(rate, into = c("cases", "population"), sep = "/")
+  convert = TRUE (guess columns types e.g. int, dbl)
+    can also use sep = n to split after n characters
+unite() - inverse of separate()
+select - select columns
+separate(key, c("new", "type", "sexage"), sep = "_") - renaming cols
+select(-<COL>) - remove column
+#Binning continuous variable
+a$density_new <- cut(a$density,breaks=c(seq(from = min(a$density),to = max(a$density),length.out=5)))
+  #cut breaks into categories
+  #Breaks define the break points
+  #Seq creates a sequence from defined points
+  #Length.out defines length of sequence
+```
+
+Relational data and joins:
+```{r}
+#Setting names for a data frame
+a <- data.frame(row.names = "mpg" %+% chr(1:nrow(mpg)),
+  manufacturer = mpg$manufacturer,
+  model = mpg$model, displ = mpg$displ,
+  cyl = mpg$cyl)
+
+#Adding observations
+total <- rbind(dataframeA, dataframeB)
+      #ensure number of variables match (can add col with NAs or delete extra cols not intersecting)
+#Example
+grp <- runif(nrow(custdata))
+  df <- data.frame(grp)
+  newdata <- cbind(custdata, df)
+  newdata["grp"]
+
+#Joins - ensure variable names are identical to join
+Mutating joins - add new vars of one table to another
+Filtering joins - filter observations from one table based on another
+Set operations - treat observations as if they were set elements
+Inner join - keep observations that appear in both tables
+Outer join - keep observations that appear in AT LEAST 1 table
+
+#Mutating joins - add new variables to one data frame from matching observations in another
+     left_join(<TABLE1>, <TABLE2>, by=<KEY>) - keep all in 1
+     right_join(<TABLE1>, <TABLE2>, by=<KEY>) - keep all in 2
+     inner_join(...) - keep intersecting cols 
+     full_join(...) - keep all cols
+     by = NULL - variables appearing in both tables (natural join)
+     by = c("a" = "b") - key has different name in tables
+     
+#Filtering joins - filter observations from one data frame based on whether or not they match an observation in the other table
+      semi_join(x,y) - keep all in x that have a match in y
+      anti_join(...) - drops all in x that have a match in y
+      flights %>% 
+        filter(dest %in% top_dest$dest) - filter flights by rows in dest col from top_dest table 
+          OR flights %>% 
+              semi_join(top_dest)
+          
+#Set operations - treat observations as if they were set elements
+      intersect(x, y): return only observations in both x and y.
+      union(x, y): return unique observations in x and y.
+      setdiff(x, y): return observations in x, but not in y.
+          
+     
+#Keys:
+key - variable connecting tables
+primary key - uniquely identifies an observation in its own table
+foreign key - uniquely identifies an observation in another table
+surrogate key - artificial key using mutate() & row_number()
+Checking primary keys - count() -> n=1
+```
+
+Strings:
+```{r}
+**See 14.4.1 for string-based col filtering**
+**Replace 'str' with 'stri' for stringi instead of stringr**
+Contains string:
+  df$loc01 <- ifelse(grepl("non",df$loc_01),'outside','inside')
+str_replace(<COL>,"<STRING>","<REPLACMENT>")
+str_length() and other str_*()
+str_c() - combine strings 
+  sep = '<SEPARATOR>' 
+  str_replace_na(x) - replace missing values with NA and combine
+  str_c("prefix-", c("a", "b", "c"), "-suffix") - prefix and/or suffix all values in middle vector and store as a vector
+**Can use logic operators to include prefix/suffix** (14.2.2)
+**Specify locale (region) if needed** (14.2.4)
+str_sub(<STRING>, start, end) 
+str_to_lower() - convert to lower case
+       upper or title - upper case or title
+str_view() / str_view_all() - take char vector and reg expression and show how they match
+  x <- c("apple", "banana", "pear")
+    str_view(x, "an")
+    or str_view(x, ".a.") - match any character
+      "\\." when trying to match a "." (dot)
+      "\\\\" when trying to match a "\"
+      "^<TO MATCH> - match start of string
+      <TO MATCH>$ - match end of string
+      ^<TO MATCH>$ - match complete string
+      \d: matches any digit.
+      \s: matches any whitespace (e.g. space, tab, newline).
+      [abc]: matches a, b, or c.
+      [^abc]: matches anything except a, b, or c.
+      ']' '\' '^' and '- have to be handled with double backslash
+      escapes
+      str_view(c("grey", "gray"), "gr(e|a)y")
+    Specify number of matches e.g. str_view(x, "C{2}")
+      {n}: exactly n
+      {n,}: n or more
+      {,m}: at most m
+      {n,m}: between n and m
+      {n,m}: between n and m - matching shortest string
+str_detect() - determine if character vector matches a pattern
+  uses logical operators --> incorporate sum and mean (0,1)
+str_count() - outputs no. of matches
+  **Useful with mutate (14.4.1)**
+str_subset() - wrapper???
+str_view_all() - show all matches, not just the first one
+str_extract() - extract actual text of a match
+str_extract_all() - extract all actual text matches
+  simplify = TRUE to return matrix with short matches expanded to the same length as the longest (consistency)
+str_match() - gives each individual component, returning a matrix (one col for complete match followed by one col for each group)
+str_replace() - replace matches with new strings (first)
+str_replace_all() - replace ALL matches with new strings
+  e.g x <- c("1 house", "2 cars", "3 people")
+        str_replace_all(x, c("1" = "one", "2" = "two", "3" = "three"))
+str_split() - split into pieces using delimiter
+  simplify = TRUE to transform into matrix
+    e.g. fields <- c("Name: Hadley", "Country: NZ", "Age: 35")
+            %>% str_split(": ", n = 2, simplify = TRUE)
+    boundary() - split by char, line, sentence or word
+str_locate() - starting & ending position of each match
+      or  _all()
+writelines() - raw contents of string
+ignose_case = TRUE - match either upper or lower case forms 
+multiline = TRUE - allows ^ and $ to match start and end of each line, instead of complete string e.g. when using \n (new line)
+comments = TRUE
+dotall = TRUE - allow "." (dot) to match everything (inc \n)
+regex() - used by default 
+  Alternatives:
+      fixed() - match exactly specified sequence of bytes
+      coll() - compare strings using standard collation rules 
+          Note: coll() is slower
+apropos() - searches all objects available in global environment
+  e.g. apropos("replace") --> "%+replace%"       "replace"          "replace_na"
+dir(pattern = "<PATTERN>") - list all files in a directory
+"\n" - new line()
+"\t" - tab
+Non-English - "\u00b5" --> Greek mew
+```
+
+Factors:
+```{r}
+**Factors are used to work with categorical variables, variables that have a fixed and known set of possible values. They are also useful when you want to display character vectors in a non-alphabetical **
+**Modifying factor order - 15.4**
+  
+Create list of valid 'levels'
+e.g. month_levels <- c(
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+factor() - normal factoring
+parse_factor() - give warnings if not in levels list
+  y1 <- factor(<TABLE>, levels = month_levels) 
+sort() - sort based on levels sorting
+unique() - order of levels match first appearance, not alphabetical
+fct_inorder() - same as unique, but separate, after-the-fact fnc
+fct_reorder() - input factor (f), numeric value used for ordering (x)
+  fun - if there are multiple values of x 
+fct_relevel(<col>, <level1>,<leveln> ) - move levels to the front
+fct_reorder2() - reorders factors by the y values associated with the largest x values (line plots)
+fct_infreq() - bar plots - order levels in increasing freq
+  fct_rev() - combine with above (for some reason)
+fct_recode() - recode/change value of each level
+  e.g gss_cat %>%
+        mutate(partyid = fct_recode(partyid,
+          "Republican, strong"    = "Strong republican",
+          "Republican, weak"      = "Not str republican",
+          "Other"                 = "No answer",
+          "Other"                 = "Don't know",
+          "Other"                 = "Other party" ... ))
+fct_collapse() - same as recode but assign using vectors
+fct_lump() - specify n groupings and lump into categories
+```
+
+
+Arithmetic, vectors, matrices, stats
+```{r}
+c() - vector
+n() - returns size of current group
+%/% - integer division (5.5)
+%% - remainder
+
+Cumulative and rolling aggregates - cumsum(), cumprod(), cummin(), cummax(), cummean()
+Compute running differences (5.5) - lead(x), lag(x)
+
+%>% - Pull outcome of previous action into next lines function to avoid having to define new variables constantly e.g. x %>% f(y) turns into f(x, y) 
+
+count(), mean(), sum(), median(), min(), max(), quantile(), sd(), IQR(), mad(), first(), nth(x,n), last()
+
+Aggregation, NAs, weight
+n() - return size of current group
+sum(!is.na(x)) - count non-NA values
+n_distinct(x) - count distinct values
+count(x,wt = <VAR>) - count <VAR> for grouping x
+sum(x > 500) - TRUE values = 1 -> sum all 1s
+5.6.5 for progressively rolling up summaries
+
+<FUNCTION>(par()) #determine number of parameters in a function
+par(<PARAMETER>) #default of parameter
+
+#Subset rows based on variable condition
+a[a$manufacturer == "audi" & a$model == "a4 quattro",]
+```
+
+Date and time
+```{r}
+as.Date(x, "input_format")
+
+#Symbol Meaning Example
+%d Day as a number (1-31) 01-31
+%a Abbreviated weekday Mon
+%A Unabbreviated weekday Monday
+%m Month (1-12) 01-12
+%b Abbreviated month Jan
+%B Unabbreviated month January
+%y 2-digit year 18
+%Y 4-digit year 2018
+Default - yyyy-mm-dd
+
+#Formatting date values
+today <- Sys.Date()
+format(today, format="%B %d %Y")
+
+#Date difference
+julian(<DATE1>, origin = <DATE2>)
+difftime(<DATE1>, <DATE2>, units="weeks")
+
+Sys.Date() - current system date in date type
+date() - current system data in character/string type
+Sys.time() contains timezone, of class c("POSIXct" "POSIXt")
+weekdays()
+quarters()
+today() - date
+now() - date and time and timezone
+ymd, mdy, dmy ("<STRING>") --> parse
+make_date() or make_datetime() - create date/time from multiple cols that are individually month, year, time, etc.
+as_datetime() or as_date() - convert between date and date/time
+year(), month(), mday(), yday(), wday(), hour(), minute(), second()
+  label = TRUE = return abberviated name of the month or day of the week 
+  abbr = FALSE - return full name
+
+Rounding to nearest unit of time:
+floor_date() - round down
+round_date() - choose
+ceiling_date() - round up
+
+Setting values:
+year(datetime) <- 2020
+month(datetime) <- 01
+hour(datetime) <- hour(datetime) + 1
+update(datetime, year = 2020, month = 2, mday = 2, hour = 2)
+
+Durations (16.4.1) - exact no. of seconds
+**Can add, multiply, subtract results**
+h_age <- today() - ymd(19791014)
+ > Time difference of 14817 days
+as.duration(h_age)
+ > [1] "1280188800s (~40.57 years)"
+dseconds(), dminutes() ... dyears()
+
+Periods (16.4.2) - human time periods e.g. weeks/months
+**Can add, multiply, subtract results**
+seconds, minutes ... years()
+ymd("2016-01-01") + years(1)
+ > [1] "2017-01-01"
+
+Intervals (16.4.3) - duration with start/end points
+next_year <- today() + years(1)
+(today() %--% next_year) / ddays(1)
+ > [1] 365
+
+
+```
+
+
+Logic operators and if statements
+```{r}
+< =< != == &(and) |(or) %in% (subset)
+#if and else statement
+if (logical_expression) {
+statements
+} else {
+alternative_statements
+#ifelse
+ifelse (logical_expression, yes_statement, no_statement)
+}
+
+#Create new column based on logical expressions and existing columns 
+autos_4 <- mutate(autos_4, Group = case_when(mpg < 20 ~ "low", mpg < 27 ~ "medium",mpg >= 27 ~ "high"))
+
+```
+
+Looping (for and while)
+```{r}
+#For
+for(i in x:y) {
+print(i*i)
+}
+
+#While
+i <- 1
+while(i<=5) {
+print(i*i)
+i<-i+sqrt(i)
+}
+
+```
+
+Summaries
+```{r}
+view(), str(), summarise()
+dim() - table dimensions
+group_by(dataframe, col1, col2)
+e.g. summarise(group_by(col1, col2),col3)
+--> aggregate col3 by col1 and col2
+ungroup() - remove aggregation
+range(<col>) #numeric range of col
+```
+
+
+dplyr key functions (data frames and tables)
+```{r}
+filter()
+arrange()
+select()
+mutate(), transmute()
+summarise()
+group_by()
+rename() --> variable = var_new
+  #custdata <- rename(custdata, age.cat=agecat)
+
+```
+
+Mutate
+```{r}
+mutate(DATAFRAME,new_col = col1 - col2)
+Note: use transmute to keep old columns (col1, col2)
+```
+
+Functions
+```{r}
+#General function layout
+add <- function(<input1>,<input2>) {
+result <- input1+input2
+return(result)
+}
+```
+
+Filtering and selecting
+```{r}
+#Filtering - selecting rows
+filter(DATAFRAME,VARIABLE==1)
+OR
+newdata <- custdata[which(custdata$sex=="M" & custdata$age < 30),] #col indices blank to include all cols, just dropping rows (filtering)
+
+#Selecting or subsetting - selecting cols
+select(DATAFRAME,VARIABLE_1,VARIABLE_5) --> only shows columns specified
+Note: use '-' to exclude specified rows
+OR
+myvars <- c("custid", "is.employed", "income",
+"marital.stat", "health.ins", "age") #specify cols to grab later in vector form
+newdata <- custdata[myvars] #call cols to keep from character vector of col names
+OR #not include
+myvars <- names(custdata) %in% c("sex", "state.of.res")
+newdata <- custdata[!myvars]
+OR #explicit list of cols
+newdata <- subset(custdata, age >= 65 | age < 24,
+select=c("custid", "marital.stat"))
+OR #from colx to colx+n
+newdata <- subset(custdata, sex=="M" & age < 25,select=custid:age)
+
+#Helpful functions
+starts_with(), ends_with(), contains(), matches(), everything()
+```
+
+Arranging, ordering, ranking, sorting
+```{r}
+arrange(DATAFRAME,VARIABLE_1,VARIABLE_2)
+desc() - descending
+Note: missing values at end
+
+min_rank(x) (desc(x)) for reverse
+Variants: row_number(), dense_rank(), percent_rank(), cume_dist()
+
+#Sorting data
+newdata <- custdata[order(<COL1>, -<COL2>),] #negative for descending order
+                                              #sorting by asc <COL1> and then desc by <COL2> 
+
+```
+
+Missing/NA values
+```{r}
+ df[!(is.na(df$start_pc) | df$start_pc==""), ] #Remove records with nulls
+is.na(x)
+na.rm = TRUE - remove NAs before computing function
+Replace with NA - mutate(y = ifelse(y < 3 | y > 20, NA, y))
+**An explicit missing value is the presence of an absence; an implicit missing value is the absence of a presence.**
+  -> can use pivot_*(), complete() and fill() to make implicit explicit
+  -> values_drop_na = TRUE in pivot_longer() to make explicit implicit
+str_replace_na()
+```
+
+Sample data or test data
+```{r}
+#Creating sample data
+mysample <- custdata[
+sample(1:nrow(custdata), 3, replace=FALSE),]
+```
+
+
+Plotting
+```{r}
+#ggplot
+Required:
+ggplot(data=<DATA>)+
+      <GEOM_FUNCTION>(mapping=aes(x=col1,y=col2),
+
+Additional - part of mappings
+      stat=<STAT>,position=<POSITION>) +
+
+Additional - functions
+      <COORDINATE_FUNCTION> +
+      <FACET_FUNCTION> +
+      <SCALE_FUNCTION> +
+      <THEME_FUNCTION>
+
+  Examples:
+    coord_cartesian(ylim = c(0,50))
+    Note: xlim(), ylim() diff b/w coord_cartesian 
+    and ggplot2 functions 
+
+Labels:
+  labs(title = "Fuel efficiency generally decreases with engine size")
+    title, subtitle, caption, x, y, colour
+Mathematical labels: x = quote(<EQUATION>)
+Point labelling:
+     geom_text(aes(label = model), data = best_in_class)
+  or geom_label(aes(label = model), data = best_in_class, nudge_y = 2, alpha = 0.5)
+  or ggrepel::geom_label_repel(aes(label = model), data = best_in_class)
+geom_hline() or _vline() - reference lines
+geom_rect() - draw rectangle around points of interest
+geom_segment() - draw attention to a point with an arrow
+geom_smooth(method="lm" or "loess") #methods of line/curve fitting - regression or local regression
+  #Level = 0.95 (confidence)
+    
+Legend:
+theme(legend.position = "none" - turn off legend
+base + theme(legend.position = "left") 
+  **left, top, bottom, right (default), none**
+      
+Scales (see 28.4.3 for palettes):
+ggplot(mpg, aes(displ, hwy)) +
+  geom_point(aes(colour = class)) +
+  scale_x_continuous() +
+  scale_y_continuous() +
+  scale_colour_discrete()
+      **continuous, discrete, datetime, date**
+Axis ticks: scale_y_continuous(breaks = seq(15, 40, by = 5))
+guides(), guide_legend(), guide_colourbar()
+Changing scale (note 'log')
+    ggplot(diamonds, aes(carat, price)) +
+      geom_bin2d() + 
+      scale_x_log10() + 
+      scale_y_log10()
+Assign colours to specific values: scale_colour_manual(values = c(Republican = "red", Democratic = "blue"))
+Continuous colour - scale_colour_gradient() or scale_fill_gradient()
+  or viridis::scale_colour_viridis()
+Diverging continuous scale - scale_colour_gradient2()
+Categorical - scale_colour_brewer(palette = "Set1")
+
+Zooming:
+coord_cartesian(xlim = c(5, 7), ylim = c(10, 30))
+
+Themes:
+theme_*()
+
+#Geoms
+
+#Aesthetics
+
+Aesthetics (see 28.4.3 for palettes):
+size = <col1>
+se = TRUE/FALSE (geom_smooth) #se = standard errors (confidence intervals)
+linetype = ...
+colour, shape, fill, size
++facet_wrap(facets=a$quality)
++facet_grip(.~<COL>) # "." indicates single row and "col" columns (number of unique values in col)
+facets=.~<col> # "." indicates single row and "col" columns (number of unique values in col)
+binwidth=n
++ggtitle("MAIN TITLE")
++bw_theme(base_family="FONT")
++ylim(-3,3) #limit data
++coord_cartesian(ylim=c(-3,3)) #Limit coordinate system
++labs(x,y,title)
++annotate("text", x = 150000, y = 3000, label = "<LABEL>")
+#Log
++scale_x_log10(breaks=c(100,1000,10000,100000) # or y - change scale not values
+
+Simplified:
+  ggplot(faithful, aes(eruptions)) + 
+    geom_freqpoly(binwidth = 0.25)
+
+#Categorical:
+  Single variable:
+  ggplot(data=<DATA>) +
+    geom_bar(mapping=aes(x=<VAR>),position="")
+    #position = dodge, stack, fill, identity
+Manual: count(<VAR>)
+
+#Continuous:
+  Single variable:
+  ggplot(data=<DATA) +
+    geom_histogram(mapping=aes(x=<VAR>,binwidth=n))
+or  geom_freqpoly(...) - line
+Manual: count(cut_width(<VAR>,n))
+  
+  #Single variable broken down by categorical 
+  A) Standardise - density - area under curve equals 1
+    ggplot(data = diamonds, mapping = aes(x = price, y = ..density..)) + 
+  geom_freqpoly(mapping = aes(colour = cut), binwidth = 500)
+    OR
+  B) Boxplots
+    ggplot(data = diamonds, mapping = aes(x = cut, y = price)) +
+  geom_boxplot() 
+        #Boxplot parameters - outlier.colour="red", outlier.shape=16, outlier.size=2
+    
+#Two categorical variables:
+  A) Geom count (dot sizes)
+  ggplot(data = diamonds) +
+  geom_count(mapping = aes(x = cut, y = color))
+  B) Geom tile (hot spots)
+  diamonds %>% 
+    count(color, cut) %>%  
+    ggplot(mapping = aes(x = color, y = cut)) +
+      geom_tile(mapping = aes(fill = n))
+
+#Two continuous variables:
+  A) Scatter plot (use alpha to add heat effect)
+  ggplot(data = diamonds) +
+    geom_point(mapping = aes(x = carat, y = price, alpha = 1/100))
+  B) 2d/hex binning
+  ggplot(data = smaller) +
+    geom_hex(mapping = aes(x = carat, y = price))
+ or geom_bin2d(...)
+
+Useful functions within ggplot:
+  reorder()
+  coord_flip()
+    ,reorder = (x=COUNT_ACCIDENT))
+  
+  
+Save plots:
+  ggsave
+
+Figure sizing:
+  fig.width(), fig.height(), fig.asp(), out.width(), out.height()
+  fig.width = 6
+  fig.asp = 0.618
+  out.width = "70%" 
+  fig.align = "center"
+Multiple
+  out.width = "50%" (2), "33%" (3), "25%" (4) ... etc.
+  fig.align = "default"
+
+fig.show = "hold" - plots are shown after code
+fig.cap 
+
+#Pairwise variable comparison
+library(lattice)
+pairs(<DATA>)
+
+event_palette <- RColorBrewer::brewer.pal(n=5,'Set2')
+
+#Density plots
+hist(data$column,freq=FALSE)
+
+#Boxplot all variables with frequencies
+ggplot(stack(<DATA>)) +
++         geom_boxplot(mapping=aes(x=ind,y=values))
+
+#Lattice package
+xyplot (scatter), bwplot (box & whisker), and histogram
+y~x (y depends on x)
+xyplot(y ~ x | f * g, <data>) #f & g are optional conditioning variables
+
+#R default plotting
+boxplot(<COLUMN>)
+with(<DATA>,plot(X,Y))
+abline(h=12,v=2) - draw vert or hori lines on chart
+hist(<COL>, breaks = n)  breaks = bins
+rug(<COL>) - representation of actual data points under histogram (good for distribution)
+barplot()
+boxplot(y~x,<DATA>) - boxplot distribution of y column values aggregated by x column as x-axis
+with(<DATA>,plot(x,y))
+title(main="Old Faithful Geyser data")
+xyplot(Life.Exp ~ Income | region, data = state, layout = c(4, 1))
+  # | for facets, layout specifying plots cols and rows
+base: plot,hist,boxplot,barplot, etc
+grDevices: x11, PDF, PostScript, PNG, etc
+  xlab, ylab, col.axis, col.lab
+  legend("topright",pch=c(17,8),col=c("blue","red"),legend=c("May","Other Months")) #legends, pch=shape (for two subsets, may (blue) and notmay (red))
+  lty = line type, lwd = width
+  
+#COLOURS!!!
+#grDevices package
+colors() #657 predefined colors
+colorRamp() #for palettes
+colorRampPalette() #for palettes
+
+#RColorBrewer
+cols <- brewer.pal(n,"BuGn") #n colours, palette code
+pal<-colorRampPalette(cols)
+
+
+```
+
+Modelling
+```{r}
+Building a model:
+~~~
+  library(modelr)
+
+  mod <- lm(log(price) ~ log(carat), data = diamonds)
+
+  diamonds2 <- diamonds %>% 
+    add_residuals(mod) %>% 
+    mutate(resid = exp(resid))
+
+  ggplot(data = diamonds2) + 
+    geom_point(mapping = aes(x = carat, y = resid))
+~~~
+```
+
+R packages
+```{r}
+tidyverse - set of packages working together
+d3heatmap or heatmaply - interactive heat plots
+hexbin - rectangular binning
+modelr - models and predictions
+feather - fast binary file format 
+ggplot2 - advanced plotting
+dplyr - grammar of data manipulation (similar to SQL)
+tidyr - tidy data
+stringr - tidyverse string manipulation
+stringi - tidyverse string manipulation (advanced)
+forcats - tools for categorical variables (factors)
+ggrepel - auto adjust labels to not overlap
+RColorBrewer - palettes (categorical)
+viridis - continuous analog of categorical ColorBrewer
+ggthemes - themes
+lattice - pairwise variable comparison
+sqldf - SQL
+```
+
+Extras and drafts
+```{r}
+accident_by_classification <- injury %>% 
+        group_by(CLASSIFICATION) %>% 
+        summarise(ACCIDENT_TYPE = count(ACCIDENT_DT),na.rm = T)
+accident_by_classification <- transform(accident_by_classification, CLASSIFICATION=reorder(CLASSIFICATION, ACCIDENT_TYPE))
+
+ggplot(accident_by_classification, mapping=aes(x=CLASSIFICATION, y=ACCIDENT_TYPE))+
+  geom_bar() +
+  coord_flip()
+  theme_light()
+
+
+aggregate(x= injury$DOCUMENT_NO, FUN = count, by = list(injury$OPERATOR_NAME))
+
+#Adding zeroes to 2400 time
+   ifelse(grepl("INJURIES",injury$ACCIDENT_TIME) | grepl("DAYS",injury$ACCIDENT_TIME) | grepl("DYS",injury$ACCIDENT_TIME),'Injury',
+                  ifelse(grepl("ACCIDENT",injury$ACCIDENT_TIME),'Accident only',
+                  ifelse(grepl("PERM",injury$ACCIDENT_TIME),'Permanent disability',
+                         'Other')))))
+
+ggplot(exper_events,aes(x=EXPER_BIN,y=DAYS_LOST))+
+  geom
+```

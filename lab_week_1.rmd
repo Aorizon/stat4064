@@ -1,0 +1,9 @@
+# Un-attach any loaded packages so they don’t interact with your namespace
+```{r}
+if (!is.null(sessionInfo()$otherPkgs)) {
+    invisible(
+        lapply(paste0('package:', names(sessionInfo()$otherPkgs)),
+            detach, character.only=TRUE, unload=TRUE)
+    )
+}
+```
