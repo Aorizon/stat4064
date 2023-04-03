@@ -1,0 +1,121 @@
+---
+title: "Assignment 1 - Johann Visser - 21293681"
+output: html_document
+date: "2023-04-03"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Question 1
+### Part A
+False positives and false negatives. In other words, values are either 'falsely' identified to be present (false positives) or not present (false negatives).False positives and false negatives can have serious consequences when making real world decisions, resulting in incorrect classifications which could be used to perform real world decision, which could have significant safety, economic or environmental consequences. Unfortunately it is not possible to have a perfect model and models are tuned to optimise the benefit and risk associated with the decision. The context of the decision making within the business, including processes and systems within which the model will be operating, should determine which way the model is tuned.
+
+### Part B
+An examples scenario could be the diagnostics of cancer within human patients. A false negative in medicine could lead to a patient's cancer not being detected, which could result in serious health consequences or even prove to be fatal. A false positive could on the other hand lead the patient to receiving treatment, like chemotherapy, unnecessarily, resulting in life changing side effects. Neither outcomes should be taken lightly and sufficient tuning is required to minimise the likelihood of either of these outcomes. 'Human-in-the-loop' should always be there to monitor, challenge and validate (as much as is possible) the recommendations of such systems and models.
+
+### Part C
+The confusion matrix will likely (but not necessarily) change between the training and testing data. In general, it is likely that there will be an increase in false positives and false negatives due to the model learning from a sample of data. The model is not able to see all possible combinations of predictor and response values, and is required to use what it has learned from training to predict most likely responses. Training data could also have outliers or noise that introduces residual error into the model. Depending on the design of the model, it could also either overfit, meaning it is not able to generalise as well, resulting in more false positives, or it could unfit, meaning it generalises too much, resulting in more false negatives.
+
+## Question 2
+### Part A
+```{r}
+# Importing the 'Auto' data from ISLR2
+library(ISLR2)
+data(Auto)
+
+# Dividing the data into two groups of equal size
+auto_1 <- Auto[c(1:(nrow(Auto)/2)),]
+auto_2 <- Auto[c((nrow(Auto)/2)+1):(nrow(Auto)),]
+
+# Providing the value for accelerate for the first record of the second half of the data
+cat("The value for accelerate for the first record of the second half of the data is", auto_2[1,"acceleration"])
+```
+
+### Part B
+```{r}
+# Build the model
+auto_model <- lm(formula = acceleration ~ displacement + horsepower:weight + mpg:weight, data = Auto)
+summary(auto_model)
+```
+
+From the above results, we can see that the p-values for both the pairwise predictors, horsepower:weight and mpg:weight, are less than 0.05, which means we would want to keep these in our model. Displacement produces a p-value of greater than 0.05, therefore we shall exclude it.
+
+### Part C
+```{r}
+# Build the model excluding displacement
+auto_model <- lm(formula = acceleration ~  horsepower:weight + mpg:weight, data = Auto)
+summary(auto_model)
+```
+The expression for the final model is: acceleration = 1.581e+01 - 7.052e-06 * horsepower:weight + 3.309e-05 * weight:mpg 
+
+## Question 3
+### Part A
+```{r}
+# Creating the new variable 'mpgclass' and store in a new table
+Auto_3a <- Auto
+Auto_3a$mpgclass <- ifelse(Auto$mpg < 20 , "low",
+                            ifelse(Auto$mpg < 27, "medium", "high"))
+
+# Proportion of each category
+prop.table(table(Auto_3a$mpgclass))
+```
+Proportions are presented above
+
+### Part B
+```{r}
+#Import MASS library
+library(MASS)
+
+# New table with only selected columns
+Auto_3b <- Auto_3a[, c("acceleration", "displacement", "horsepower", "weight", "mpgclass")]
+
+# New table with only predictors
+Auto_3b_predictors <- Auto_3b[,-5]
+
+# Build the model excluding displacement
+Auto_3b_model <- lda(mpgclass ~ acceleration + displacement + horsepower + weight, data = Auto_3b)
+
+# Perform predictions
+predictions <- predict(Auto_3b_model, newdata = Auto_3b_predictors)
+
+# Confusion matrix
+conf <- table(Auto_3b$mpgclass, predictions$class)
+conf
+```
+The confusion matrix can be seen above
+
+```{r}
+# Calculating classification error
+error <- 1 - sum(diag(conf)) / sum(conf)
+error <- cat(round(error*100,1),"%")
+```
+The classification error can be found above
+
+### Part C
+```{r}
+# Creating a test dataset using only cars from the year '75' and only predictors
+Auto_3c_test <- subset(Auto_3a, year == 75)
+Auto_3c_test <- Auto_3c_test[, c("acceleration", "displacement", "horsepower", "weight", "mpgclass")]
+
+#Predictions table
+Auto_3c_test_predictions <- Auto_3c_test[, c("acceleration", "displacement", "horsepower", "weight")]
+
+# Perform predictions
+predictions_3c_test <- predict(Auto_3b_model, newdata = Auto_3c_test_predictions)
+
+# Confusion matrix
+conf <- table(Auto_3c_test$mpgclass, predictions_3c_test$class)
+conf
+```
+The confusion matrix can be seen above
+
+```{r}
+# Calculating classification error
+error <- 1 - sum(diag(conf)) / sum(conf)
+error <- cat(round(error*100,1),"%")
+```
+The classification error can be found above
+
+### Part D
