@@ -10,7 +10,7 @@
 
 
 
-<meta name="date" content="2023-04-03" />
+<meta name="date" content="2023-04-05" />
 
 <title>Assignment 1 - Johann Visser - 21293681</title>
 
@@ -351,7 +351,7 @@ display: none;
 
 <h1 class="title toc-ignore">Assignment 1 - Johann Visser -
 21293681</h1>
-<h4 class="date">2023-04-03</h4>
+<h4 class="date">2023-04-05</h4>
 
 </div>
 
@@ -528,6 +528,117 @@ error &lt;- 1 - sum(diag(conf)) / sum(conf)
 error &lt;- cat(round(error*100,1),&quot;%&quot;)</code></pre>
 <pre><code>## 25.8 %</code></pre>
 <p>The classification error can be found above</p>
+</div>
+<div id="part-c-2" class="section level3">
+<h3>Part C</h3>
+<pre class="r"><code># Creating a test dataset using only cars from the year &#39;75&#39; and only predictors
+Auto_3c_test &lt;- subset(Auto_3a, year == 75)
+Auto_3c_test &lt;- Auto_3c_test[, c(&quot;acceleration&quot;, &quot;displacement&quot;, &quot;horsepower&quot;, &quot;weight&quot;, &quot;mpgclass&quot;)]
+
+#Predictions table
+Auto_3c_test_predictions &lt;- Auto_3c_test[, c(&quot;acceleration&quot;, &quot;displacement&quot;, &quot;horsepower&quot;, &quot;weight&quot;)]
+
+# Perform predictions
+predictions_3c_test &lt;- predict(Auto_3b_model, newdata = Auto_3c_test_predictions)
+
+# Confusion matrix
+conf &lt;- table(Auto_3c_test$mpgclass, predictions_3c_test$class)
+conf</code></pre>
+<pre><code>##         
+##          high low medium
+##   high      3   0      0
+##   low       0  14      1
+##   medium    1   1     10</code></pre>
+<p>The confusion matrix can be seen above</p>
+<pre class="r"><code># Calculating classification error
+error &lt;- 1 - sum(diag(conf)) / sum(conf)
+error &lt;- cat(round(error*100,1),&quot;%&quot;)</code></pre>
+<pre><code>## 10 %</code></pre>
+<p>The classification error can be found above</p>
+</div>
+<div id="part-d" class="section level3">
+<h3>Part D</h3>
+<pre class="r"><code># Taking the test data from (3c)
+Auto_3d_test &lt;- Auto_3c_test
+
+#Training data using cars from all other years
+Auto_3d_train &lt;- subset(Auto_3a, year != 75)
+
+# New table with only selected columns
+Auto_3d_train &lt;- Auto_3d_train[, c(&quot;acceleration&quot;, &quot;displacement&quot;, &quot;horsepower&quot;, &quot;weight&quot;, &quot;mpgclass&quot;)]
+
+# New table with only predictors
+Auto_3d_train_predictors &lt;- Auto_3d_train[,-5]
+
+# Build the model excluding displacement
+Auto_3d_model &lt;- lda(mpgclass ~ acceleration + displacement + horsepower + weight, data = Auto_3d_train)
+
+# Perform predictions
+predictions &lt;- predict(Auto_3d_model, newdata = Auto_3d_train_predictors)
+
+# Confusion matrix
+conf &lt;- table(Auto_3d_train$mpgclass, predictions$class)
+conf</code></pre>
+<pre><code>##         
+##          high low medium
+##   high    107   1     20
+##   low       3 119     14
+##   medium   48  14     36</code></pre>
+<p>The confusion matrix can be seen above</p>
+<pre class="r"><code># Calculating classification error
+error &lt;- 1 - sum(diag(conf)) / sum(conf)
+error &lt;- cat(round(error*100,1),&quot;%&quot;)</code></pre>
+<pre><code>## 27.6 %</code></pre>
+<p>The training error can be seen above</p>
+</div>
+<div id="part-e" class="section level3">
+<h3>Part E</h3>
+<pre class="r"><code># New table with only predictors from test data
+Auto_3d_test_predictors &lt;- Auto_3d_test[,-5]
+
+# Build the model excluding displacement
+Auto_3e_model &lt;- lda(mpgclass ~ acceleration + displacement + horsepower + weight, data = Auto_3d_train)
+
+# Perform predictions
+predictions &lt;- predict(Auto_3e_model, newdata = Auto_3d_test_predictors)
+
+# Confusion matrix
+conf &lt;- table(Auto_3d_test$mpgclass, predictions$class)
+conf</code></pre>
+<pre><code>##         
+##          high low medium
+##   high      3   0      0
+##   low       0  14      1
+##   medium    1   1     10</code></pre>
+<p>The confusion matrix can be seen above</p>
+<pre class="r"><code># Calculating classification error
+error &lt;- 1 - sum(diag(conf)) / sum(conf)
+error &lt;- cat(round(error*100,1),&quot;%&quot;)</code></pre>
+<pre><code>## 10 %</code></pre>
+<p>The training error can be seen above</p>
+</div>
+<div id="part-f" class="section level3">
+<h3>Part F</h3>
+<p>The classification error is higher for 3b and 3d than it is for 3c
+and 3e. In both the cases of 3c and 3e, the model is tested using a
+subset of the data, only taking cars from year 75. This could indicate
+that either the model is better at classifying ‘mpg’ for cars from this
+year, or because the sample size of the testing data is much smaller (29
+compared to 392), resulting in unrepresentative test data sample to
+confidently evaluate the model. Interestingly, 3b performs slightly
+better than 3d, where 3d excludes cars from year 75; this could perhaps
+validate our hypothesis from earlier, that the model better predicts
+‘mpg’ for cars from year 75, but the performance difference is too small
+to confidently conclude this. Comparing the confusion matrices of 3b and
+3d, we note that the exclusion of cars from year 75 reduces the model’s
+ability to accurately classify low and medium ‘mpg’ values.</p>
+<p>In our case, we see no variance in the test errors of 3c and 3e, but
+we may have expected 3e to perform worse. This is because the model in
+3e was trained using cars not from year 75 and tested to predict ‘mpg’
+for cars from the year 75. There is no representation of cars from the
+year 75 in the model, making it potentially more difficult to classify
+cars from this year, because the model has not seen some patterns that
+may be relevant to classification.</p>
 </div>
 </div>
 

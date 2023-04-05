@@ -1,7 +1,9 @@
 ---
 title: "Assignment 1 - Johann Visser - 21293681"
-output: html_document
-date: "2023-04-03"
+output:
+  word_document: default
+  html_document: default
+date: "2023-04-05"
 ---
 
 ```{r setup, include=FALSE}
@@ -119,3 +121,63 @@ error <- cat(round(error*100,1),"%")
 The classification error can be found above
 
 ### Part D
+```{r}
+# Taking the test data from (3c)
+Auto_3d_test <- Auto_3c_test
+
+#Training data using cars from all other years
+Auto_3d_train <- subset(Auto_3a, year != 75)
+
+# New table with only selected columns
+Auto_3d_train <- Auto_3d_train[, c("acceleration", "displacement", "horsepower", "weight", "mpgclass")]
+
+# New table with only predictors
+Auto_3d_train_predictors <- Auto_3d_train[,-5]
+
+# Build the model excluding displacement
+Auto_3d_model <- lda(mpgclass ~ acceleration + displacement + horsepower + weight, data = Auto_3d_train)
+
+# Perform predictions
+predictions <- predict(Auto_3d_model, newdata = Auto_3d_train_predictors)
+
+# Confusion matrix
+conf <- table(Auto_3d_train$mpgclass, predictions$class)
+conf
+```
+The confusion matrix can be seen above
+
+```{r}
+# Calculating classification error
+error <- 1 - sum(diag(conf)) / sum(conf)
+error <- cat(round(error*100,1),"%")
+```
+The training error can be seen above
+
+### Part E
+```{r}
+# New table with only predictors from test data
+Auto_3d_test_predictors <- Auto_3d_test[,-5]
+
+# Build the model excluding displacement
+Auto_3e_model <- lda(mpgclass ~ acceleration + displacement + horsepower + weight, data = Auto_3d_train)
+
+# Perform predictions
+predictions <- predict(Auto_3e_model, newdata = Auto_3d_test_predictors)
+
+# Confusion matrix
+conf <- table(Auto_3d_test$mpgclass, predictions$class)
+conf
+```
+The confusion matrix can be seen above
+
+```{r}
+# Calculating classification error
+error <- 1 - sum(diag(conf)) / sum(conf)
+error <- cat(round(error*100,1),"%")
+```
+The training error can be seen above
+
+### Part F
+The classification error is higher for 3b and 3d than it is for 3c and 3e. In both the cases of 3c and 3e, the model is tested using a subset of the data, only taking cars from year 75. This could indicate that either the model is better at classifying 'mpg' for cars from this year, or because the sample size of the testing data is much smaller (29 compared to 392), resulting in unrepresentative test data sample to confidently evaluate the model. Interestingly, 3b performs slightly better than 3d, where 3d excludes cars from year 75; this could perhaps validate our hypothesis from earlier, that the model better predicts 'mpg' for cars from year 75, but the performance difference is too small to confidently conclude this. Comparing the confusion matrices of 3b and 3d, we note that the exclusion of cars from year 75 reduces the model's ability to accurately classify low and medium 'mpg' values. 
+
+In our case, we see no variance in the test errors of 3c and 3e, but we may have expected 3e to perform worse. This is because the model in 3e was trained using cars not from year 75 and tested to predict 'mpg' for cars from the year 75. There is no representation of cars from the year 75 in the model, making it potentially more difficult to classify cars from this year, because the model has not seen some patterns that may be relevant to classification.  
