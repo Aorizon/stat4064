@@ -1,0 +1,906 @@
+---
+title: "STAT4064_EXAM_CODE"
+output: pdf_document
+date: "2023-06-09"
+---
+
+## QUESTION 1
+```{r}
+df <- read.csv("carseats.csv")
+
+# Convert ShelveLoc, Urban, and US to factors
+df$ShelveLoc <- as.factor(df$ShelveLoc)
+df$Urban <- as.factor(df$Urban)
+df$US <- as.factor(df$US)
+
+# Get the number of observations (n) and variables (p)
+n <- nrow(df)
+p <- ncol(df)
+
+# Print the results
+cat("Number of observations (n):", n, "\n")
+cat("Number of variables (p):", p, "\n")
+
+# Scatterplot with regression line
+plot(df$Price, df$Sales, xlab = "Price ($)", ylab = "Sales", main = "Sales vs Price")
+abline(lm(Sales ~ Price, data = df), col = "blue")
+
+# Fit the simple linear regression model
+lm_model <- lm(Sales ~ Price, data = df)
+
+# Obtain the regression coefficients
+intercept <- coef(lm_model)[1]
+slope <- coef(lm_model)[2]
+
+# Print the estimated regression model
+cat("Estimated Simple Linear Regression Model:\n")
+cat("Sales =", intercept, "+", slope, "* Price\n")
+
+# Calculate multiple R-squared
+correlation <- cor(df$Sales, df$Price)
+multiple_r_squared <- correlation^2
+
+# PART C
+# Fit the multiple linear regression model
+lm_model <- lm(Sales ~ ., data = df)
+
+# Print the estimated model
+summary(lm_model)
+
+# Extract the model formula
+model_formula <- as.formula(lm_model)
+
+# Print the model formula
+cat("Estimated Multiple Linear Regression Model:\n")
+cat(deparse(model_formula), "\n")
+
+# PART D
+# Perform backward variable selection using BIC
+backward_model <- step(lm_model, direction = "backward", k = log(nrow(df)))
+
+# Get the order of removed variables
+removed_variables <- setdiff(names(lm_model), names(backward_model))
+
+# Print the order of removed variables
+cat("Order of removed variables:\n")
+cat(removed_variables, "\n")
+
+# Print the selected model
+cat("Selected Model:\n")
+cat(deparse(backward_model$terms), "\n")
+
+# # Fit the initial multiple linear regression model
+# lm_model <- lm(Sales ~ ., data = df)
+# 
+# # Perform backward variable selection using BIC
+# backward_model <- step(lm_model, direction = "backward", k = log(nrow(df)), trace = 0)
+# 
+# # Get the order of removed variables
+# removed_variables <- setdiff(names(lm_model), names(backward_model$terms))
+# 
+# # Print the order of removed variables
+# cat("Order of removed variables:\n")
+# cat(removed_variables, "\n")
+# 
+# # Print the selected model
+# cat("Selected Model:\n")
+# cat(deparse(backward_model$terms), "\n")
+
+# PART E
+# Initialize variables
+best_rss <- Inf
+best_model <- NULL
+last_added_feature <- NULL
+
+# Iterate over each predictor variable
+for (feature in names(df)[-1]) {
+  # Create the formula for the current feature
+  formula <- as.formula(paste("Sales ~", feature))
+  
+  # Fit the model with the current feature
+  lm_model <- lm(formula, data = df)
+  
+  # Calculate the RSS
+  rss <- sum(residuals(lm_model)^2)
+  
+  # Check if current model has lower RSS than the best model
+  if (rss < best_rss) {
+    best_rss <- rss
+    best_model <- lm_model
+    last_added_feature <- feature
+  }
+}
+
+# Print the best model with one feature
+cat("Best model with one feature:\n")
+print(best_model)
+
+# Print the last feature added to the model with all features
+cat("Last feature added to the model with all features:", last_added_feature, "\n")
+
+# PART Eii
+# Initialize variables
+bic_values <- numeric(length = ncol(df) - 1)
+
+# Iterate over each number of features
+for (num_features in 1:(ncol(df) - 1)) {
+  # Create the formula with the selected number of features
+  formula <- as.formula(paste("Sales ~", paste(names(df)[-1][1:num_features], collapse = "+")))
+  
+  # Fit the model with the selected number of features
+  lm_model <- lm(formula, data = df)
+  
+  # Calculate the BIC
+  bic <- BIC(lm_model)
+  
+  # Store the BIC value
+  bic_values[num_features] <- bic
+}
+
+# Plot the BIC as a function of the number of features
+plot(1:(ncol(df) - 1), bic_values, type = "b", xlab = "Number of Features", ylab = "BIC", main = "BIC vs Number of Features")
+
+
+
+```
+
+## QUESTION 2
+```{r}
+# PART A
+# Select numerical variables
+numerical_vars <- df[, sapply(df, is.numeric)]
+
+# Calculate correlation matrix
+correlation_matrix <- cor(numerical_vars)
+
+# Find most and least strongly correlated variables
+most_correlated <- colnames(numerical_vars)[which(correlation_matrix == max(correlation_matrix[lower.tri(correlation_matrix)]), arr.ind = TRUE)]
+least_correlated <- colnames(numerical_vars)[which(correlation_matrix == min(correlation_matrix[lower.tri(correlation_matrix)]), arr.ind = TRUE)]
+
+# Find most and least strongly correlated variable with Sales
+most_correlated_with_sales <- colnames(numerical_vars)[which.max(abs(correlation_matrix[,"Sales"]))]
+least_correlated_with_sales <- colnames(numerical_vars)[which.min(abs(correlation_matrix[,"Sales"]))]
+
+# Print the results
+cat("Most strongly correlated variables:\n")
+cat(most_correlated, "\n\n")
+
+cat("Least strongly correlated variables:\n")
+cat(least_correlated, "\n\n")
+
+cat("Most strongly correlated variable with Sales:", most_correlated_with_sales, "\n\n")
+cat("Least strongly correlated variable with Sales:", least_correlated_with_sales, "\n")
+
+# PART B
+# Create the new variable Sales.cl
+df$Sales.cl <- ifelse(df$Sales <= 9, 1, 2)
+
+# Count the number of observations in each class
+class_counts <- table(df$Sales.cl)
+
+# Print the class counts
+cat("Number of observations in each class:\n")
+cat("Class 1:", class_counts[1], "\n")
+cat("Class 2:", class_counts[2], "\n")
+
+# PART Ci
+# Perform linear discriminant analysis (LDA)
+# Create a subset of the data without the 'Sales' variable
+df_subset <- subset(df, select = -Sales)
+
+# Perform linear discriminant analysis (LDA)
+lda_model <- lda(Sales.cl ~ ., data = df_subset)
+
+# Make predictions using LDA model
+lda_predictions <- predict(lda_model, df_subset)
+
+# Calculate classification error
+classification_error <- mean(lda_predictions$class != df_subset$Sales.cl)
+
+# Print the classification error
+cat("Classification Error:", classification_error, "\n")
+
+# PART Cii
+# Perform linear discriminant analysis (LDA) with equal prior probabilities
+lda_model <- lda(Sales.cl ~ ., data = df_subset, prior = c(0.5, 0.5))
+
+# Make predictions using LDA model
+lda_predictions <- predict(lda_model, df_subset)
+
+# Calculate classification error
+classification_error <- mean(lda_predictions$class != df_subset$Sales.cl)
+
+# Print the classification error
+cat("Classification Error:", classification_error, "\n")
+
+# PART Ciii
+# Create a subset of the data without the 'Sales' variable
+df_subset <- subset(df, select = -Sales)
+
+# Fit LDA model with equal prior probabilities
+lda_model_equal <- lda(Sales.cl ~ ., data = df_subset, prior = c(0.5, 0.5))
+
+# Make predictions using LDA model with equal prior probabilities
+lda_predictions_equal <- predict(lda_model_equal, df_subset)
+
+# Calculate classification error with equal prior probabilities
+classification_error_equal <- mean(lda_predictions_equal$class != df_subset$Sales.cl)
+
+# Fit LDA model with default prior probabilities
+lda_model_default <- lda(Sales.cl ~ ., data = df_subset)
+
+# Make predictions using LDA model with default prior probabilities
+lda_predictions_default <- predict(lda_model_default, df_subset)
+
+# Calculate classification error with default prior probabilities
+classification_error_default <- mean(lda_predictions_default$class != df_subset$Sales.cl)
+
+# Create confusion matrices
+confusion_matrix_equal <- table(lda_predictions_equal$class, df_subset$Sales.cl)
+confusion_matrix_default <- table(lda_predictions_default$class, df_subset$Sales.cl)
+
+# Print the confusion matrices with titles
+cat("Confusion Matrix (Equal Prior Probabilities):\n")
+print(confusion_matrix_equal)
+cat("\n")
+
+cat("Confusion Matrix (Default Prior Probabilities):\n")
+print(confusion_matrix_default)
+
+# PART D
+# Set the seed for reproducibility
+set.seed(1234)
+
+# Create a random index for splitting the data
+index <- sample(1:nrow(df), nrow(df)*0.75)
+
+# Create the training set and test set
+training_set <- df[index, ]
+test_set <- df[-index, ]
+
+# Create a subset of the training set without the 'Sales' variable
+training_subset <- subset(training_set, select = -Sales)
+
+# Perform linear discriminant analysis (LDA) on the training set
+lda_model <- lda(Sales.cl ~ ., data = training_subset, prior = c(0.5, 0.5))
+
+# Make predictions on the training set
+lda_predictions <- predict(lda_model, training_subset)
+
+# Create a confusion matrix on the training set
+confusion_matrix <- table(lda_predictions$class, training_set$Sales.cl)
+
+# Calculate classification error on the training set
+classification_error <- mean(lda_predictions$class != training_set$Sales.cl)
+
+# Print the confusion matrix on the training set
+cat("Confusion Matrix (Training Set):\n")
+print(confusion_matrix)
+cat("\n")
+
+# Print the classification error on the training set
+cat("Classification Error (Training Set):", classification_error, "\n")
+
+# PART E
+# Create a subset of the test set without the 'Sales' variable
+test_subset <- subset(test_set, select = -Sales)
+
+# Make predictions on the test set using the model obtained from the training data
+test_predictions <- predict(lda_model, test_subset)
+
+# Create a confusion matrix on the test set
+confusion_matrix_test <- table(test_predictions$class, test_set$Sales.cl)
+
+# Calculate classification error on the test set
+classification_error_test <- mean(test_predictions$class != test_set$Sales.cl)
+
+# Print the confusion matrix on the test set
+cat("Confusion Matrix (Test Set):\n")
+print(confusion_matrix_test)
+cat("\n")
+
+# Print the classification error on the test set
+cat("Classification Error (Test Set):", classification_error_test, "\n")
+
+# PART F
+# Initialize variables
+n <- nrow(df)
+classification_errors <- rep(NA, n)
+confusion_matrix <- matrix(0, nrow = 2, ncol = 2)
+
+# Perform LOOCV
+for (i in 1:n) {
+  # Create the training set without the current observation
+  training_set <- df[-i, ]
+  
+  # Create a subset of the training set without the 'Sales' variable
+  training_subset <- subset(training_set, select = -Sales)
+  
+  # Perform linear discriminant analysis (LDA) on the training set
+  lda_model <- lda(Sales.cl ~ ., data = training_subset, prior = c(0.5, 0.5))
+  
+  # Make prediction on the left-out observation
+  observation <- df[i, ]
+  lda_prediction <- predict(lda_model, newdata = observation)
+  
+  # Update confusion matrix
+  confusion_matrix[lda_prediction$class, observation$Sales.cl] <- confusion_matrix[lda_prediction$class, observation$Sales.cl] + 1
+  
+  # Calculate classification error
+  classification_errors[i] <- lda_prediction$class != observation$Sales.cl
+}
+
+# Compute overall classification error
+classification_error <- mean(classification_errors)
+
+# Print the confusion matrix
+cat("Confusion Matrix (LOOCV):\n")
+print(confusion_matrix)
+cat("\n")
+
+# Print the classification error
+cat("Classification Error (LOOCV):", classification_error, "\n")
+
+```
+
+
+## QUESTION 3
+```{r}
+df <- read.csv("carseats.csv")
+
+# Remove non-numeric variables
+df <- df[, sapply(df, is.numeric)]
+
+# PART A
+# Perform hierarchical clustering with Euclidean distance and complete linkage
+dist_matrix <- dist(df)
+hclust_result <- hclust(dist_matrix, method = "complete")
+
+# Plot the dendrogram
+plot(hclust_result, main = "Hierarchical Clustering Dendrogram", xlab = "Observations")
+
+# Cut the dendrogram to obtain the desired number of clusters
+num_clusters <- 3  # Define the number of clusters you want to obtain
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Print the cluster membership
+cat("Cluster Membership:\n")
+print(clusters)
+
+# PART Ai
+# Plot the dendrogram
+plot(hclust_result, main = "Hierarchical Clustering, Euclidean Distance", xlab = "Observations", labels = FALSE)
+
+# PART Aii
+# Cut the dendrogram to obtain 2 clusters
+num_clusters <- 2  # Define the number of clusters as 2
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART Aiii
+# Cut the dendrogram to obtain 2 clusters
+num_clusters <- 3  # Define the number of clusters as 2
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART Aiv
+# Cut the dendrogram at a height of 210
+cut_height <- 210
+clusters <- cutree(hclust_result, h = cut_height)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Determine the number of clusters
+num_clusters <- length(cluster_counts)
+
+# Print the number of clusters and observations in each cluster
+cat("Number of clusters:", num_clusters, "\n")
+cat("Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART B
+# Perform hierarchical clustering with Euclidean distance and complete linkage
+dist_matrix <- dist(df[, !names(df) %in% "Sales"])
+hclust_result <- hclust(dist_matrix, method = "complete")
+
+# Plot the dendrogram
+plot(hclust_result, main = "Hierarchical Clustering Dendrogram", xlab = "Observations")
+
+# Cut the dendrogram to obtain the desired number of clusters
+num_clusters <- 3  # Define the number of clusters you want to obtain
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Print the cluster membership
+cat("Cluster Membership:\n")
+print(clusters)
+
+# PART B
+# # Exclude 'Sales' and non-numeric variables
+# numeric_df <- df[, sapply(df, is.numeric) & !names(df) %in% "Sales"]
+# Exclude 'Sales' variable
+df_without_sales <- df[, !colnames(df) %in% c("Sales")]
+
+# Exclude 'Sales' and non-numeric variables
+numeric_df <- df_without_sales[, sapply(df_without_sales, is.numeric)]
+
+# Perform hierarchical clustering with Euclidean distance and complete linkage
+dist_matrix <- dist(numeric_df)
+hclust_result <- hclust(dist_matrix, method = "complete")
+
+# Plot the dendrogram
+plot(hclust_result, main = "Hierarchical Clustering Dendrogram", xlab = "Observations")
+
+# Cut the dendrogram to obtain the desired number of clusters
+num_clusters <- 3  # Define the number of clusters you want to obtain
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Print the cluster membership
+cat("B. Cluster Membership:\n")
+print(clusters)
+
+# PART Bi
+# Plot the dendrogram
+plot(hclust_result, main = "Hierarchical Clustering, Euclidean Distance", xlab = "Observations", labels = FALSE)
+
+# PART Bii
+# Cut the dendrogram to obtain 2 clusters
+num_clusters <- 2  # Define the number of clusters as 2
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("B. Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART Biii
+# Cut the dendrogram to obtain 3 clusters
+num_clusters <- 3  # Define the number of clusters as 3
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("B. Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART Biv
+# Cut the dendrogram at a height of 210
+cut_height <- 210
+clusters <- cutree(hclust_result, h = cut_height)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Determine the number of clusters
+num_clusters <- length(cluster_counts)
+
+# Print the number of clusters and observations in each cluster
+cat("B. Number of clusters:", num_clusters, "\n")
+cat("B. Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART C
+# Exclude 'Sales' variable and non-numeric variables
+numeric_df <- df[, sapply(df, is.numeric)]
+numeric_df <- numeric_df[, !colnames(numeric_df) %in% "Sales"]
+
+# Perform hierarchical clustering with Euclidean distance and average linkage
+dist_matrix <- dist(numeric_df)
+hclust_result <- hclust(dist_matrix, method = "average")
+
+# Cut the dendrogram to obtain 2 clusters
+num_clusters <- 2
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# PART D
+# Exclude 'Sales' variable and non-numeric variables
+numeric_df <- df[, sapply(df, is.numeric)]
+numeric_df <- numeric_df[, !colnames(numeric_df) %in% "Sales"]
+
+# Perform hierarchical clustering with Euclidean distance and single linkage
+dist_matrix <- dist(numeric_df)
+hclust_result <- hclust(dist_matrix, method = "single")
+
+# Cut the dendrogram to obtain 2 clusters
+num_clusters <- 2
+clusters <- cutree(hclust_result, k = num_clusters)
+
+# Count the number of observations in each cluster
+cluster_counts <- table(clusters)
+
+# Print the number of observations in each cluster
+cat("Number of observations in each cluster:\n")
+print(cluster_counts)
+
+# # PART E
+# df <- read.csv("carseats.csv")
+# 
+# # Create the new variable Sales.cl
+# df$Sales.cl <- ifelse(df$Sales <= 9, 1, 2)
+# 
+# numeric_df <- df[, sapply(df, is.numeric)]
+# numeric_df <- numeric_df[, !colnames(numeric_df) %in% "Sales"]
+# 
+# # Perform hierarchical clustering with Euclidean distance and complete linkage
+# hclust_result_complete <- hclust(dist(numeric_df), method = "complete")
+# 
+# # Perform hierarchical clustering with Euclidean distance and average linkage
+# hclust_result_average <- hclust(dist(numeric_df), method = "average")
+# 
+# # Perform hierarchical clustering with Euclidean distance and single linkage
+# hclust_result_single <- hclust(dist(numeric_df), method = "single")
+# 
+# # Cut the dendrogram to obtain 2 clusters using complete linkage
+# complete_clusters <- cutree(hclust_result_complete, k = 2)
+# 
+# # Cut the dendrogram to obtain 2 clusters using average linkage
+# average_clusters <- cutree(hclust_result_average, k = 2)
+# 
+# # Cut the dendrogram to obtain 2 clusters using single linkage
+# single_clusters <- cutree(hclust_result_single, k = 2)
+# 
+# # Adjust labels of the clusters
+# complete_clusters <- ifelse(complete_clusters == 1, 2, 1)
+# average_clusters <- ifelse(average_clusters == 1, 2, 1)
+# single_clusters <- ifelse(single_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(numeric_df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# predictions <- predict(lda_model, newdata = test_data)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Complete Linkage):", classification_error, "\n")
+# 
+# # Repeat the above steps for the other two clustering models
+# 
+# # Cut the dendrogram to obtain 2 clusters using average linkage
+# average_clusters <- cutree(hclust_result_average, k = 2)
+# 
+# # Cut the dendrogram to obtain 2 clusters using single linkage
+# single_clusters <- cutree(hclust_result_single, k = 2)
+# 
+# # Adjust labels of the clusters
+# average_clusters <- ifelse(average_clusters == 1, 2, 1)
+# single_clusters <- ifelse(single_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# predictions <- predict(lda_model, newdata = test_data)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Average Linkage):", classification_error, "\n")
+# 
+# # Cut the dendrogram to obtain 2 clusters using single linkage
+# single_clusters <- cutree(hclust_result_single, k = 2)
+# 
+# # Adjust labels of the clusters
+# single_clusters <- ifelse(single_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# predictions <- predict(lda_model, newdata = test_data)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Single Linkage):", classification_error, "\n")
+
+# PART E
+# PART E
+
+
+
+
+
+
+
+# # PART E
+# df <- read.csv("carseats.csv")
+# 
+# # Create the new variable Sales.cl
+# df$Sales.cl <- ifelse(df$Sales <= 9, 1, 2)
+# 
+# numeric_df <- df[, sapply(df, is.numeric)]
+# numeric_df <- numeric_df[, !colnames(numeric_df) %in% c("Sales")]
+# 
+# # Remove constant variables within groups
+# non_constant_vars <- apply(numeric_df, 2, function(x) length(unique(x)) > 1)
+# numeric_df <- numeric_df[, non_constant_vars]
+# 
+# # Perform hierarchical clustering with Euclidean distance and complete linkage
+# hclust_result_complete <- hclust(dist(numeric_df), method = "complete")
+# 
+# # Perform hierarchical clustering with Euclidean distance and average linkage
+# hclust_result_average <- hclust(dist(numeric_df), method = "average")
+# 
+# # Perform hierarchical clustering with Euclidean distance and single linkage
+# hclust_result_single <- hclust(dist(numeric_df), method = "single")
+# 
+# # Cut the dendrogram to obtain 2 clusters using complete linkage
+# complete_clusters <- cutree(hclust_result_complete, k = 2)
+# 
+# # Cut the dendrogram to obtain 2 clusters using average linkage
+# average_clusters <- cutree(hclust_result_average, k = 2)
+# 
+# # Cut the dendrogram to obtain 2 clusters using single linkage
+# single_clusters <- cutree(hclust_result_single, k = 2)
+# 
+# # Adjust labels of the clusters
+# complete_clusters <- ifelse(complete_clusters == 1, 2, 1)
+# average_clusters <- ifelse(average_clusters == 1, 2, 1)
+# single_clusters <- ifelse(single_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(numeric_df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Remove constant variable within groups from train_data
+# train_data <- train_data[, apply(train_data, 2, function(x) length(unique(x)) > 1)]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# test_data_filtered <- test_data[, colnames(test_data) %in% colnames(train_data)] # Remove constant variables from test_data
+# predictions <- predict(lda_model, newdata = test_data_filtered)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Complete Linkage):", classification_error, "\n")
+# 
+# # Repeat the above steps for the other two clustering models
+# 
+# # Cut the dendrogram to obtain 2 clusters using average linkage
+# average_clusters <- cutree(hclust_result_average, k = 2)
+# 
+# # Adjust labels of the clusters
+# average_clusters <- ifelse(average_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(numeric_df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Remove constant variable within groups from train_data
+# train_data <- train_data[, apply(train_data, 2, function(x) length(unique(x)) > 1)]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# test_data_filtered <- test_data[, colnames(test_data) %in% colnames(train_data)] # Remove constant variables from test_data
+# predictions <- predict(lda_model, newdata = test_data_filtered)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Average Linkage):", classification_error, "\n")
+# 
+# # Cut the dendrogram to obtain 2 clusters using single linkage
+# single_clusters <- cutree(hclust_result_single, k = 2)
+# 
+# # Adjust labels of the clusters
+# single_clusters <- ifelse(single_clusters == 1, 2, 1)
+# 
+# # Create a data frame with the cluster labels as predictors
+# cluster_predictors <- data.frame(Complete = complete_clusters, Average = average_clusters, Single = single_clusters)
+# 
+# # Combine cluster predictors with the original data frame
+# df_with_clusters <- cbind(numeric_df, cluster_predictors)
+# 
+# # Split the data into training and test sets
+# set.seed(1234)
+# train_indices <- sample(1:nrow(df_with_clusters), 0.75 * nrow(df_with_clusters))
+# train_data <- df_with_clusters[train_indices, ]
+# test_data <- df_with_clusters[-train_indices, ]
+# 
+# # Remove constant variable within groups from train_data
+# train_data <- train_data[, apply(train_data, 2, function(x) length(unique(x)) > 1)]
+# 
+# # Train the model using Sales.cl as the response variable and cluster predictors
+# lda_model <- lda(Sales.cl ~ ., data = train_data)
+# 
+# # Make predictions on the test set
+# test_data_filtered <- test_data[, colnames(test_data) %in% colnames(train_data)] # Remove constant variables from test_data
+# predictions <- predict(lda_model, newdata = test_data_filtered)
+# 
+# # Calculate classification error
+# classification_error <- mean(predictions$class != test_data$Sales.cl)
+# 
+# # Print the classification error for each clustering model
+# cat("Classification Error (Single Linkage):", classification_error, "\n")
+
+# PART E
+df <- read.csv("carseats.csv")
+
+# Create the new variable Sales.cl
+df$Sales.cl <- ifelse(df$Sales <= 9, 1, 2)
+
+numeric_df <- df[, sapply(df, is.numeric)]
+numeric_df <- numeric_df[, !colnames(numeric_df) %in% c("Sales")]
+
+# Remove constant variables within groups
+non_constant_vars <- apply(numeric_df, 2, function(x) length(unique(x)) > 1)
+numeric_df <- numeric_df[, non_constant_vars]
+
+# Perform hierarchical clustering with Euclidean distance and complete linkage
+hclust_result_complete <- hclust(dist(numeric_df), method = "complete")
+
+# Perform hierarchical clustering with Euclidean distance and average linkage
+hclust_result_average <- hclust(dist(numeric_df), method = "average")
+
+# Perform hierarchical clustering with Euclidean distance and single linkage
+hclust_result_single <- hclust(dist(numeric_df), method = "single")
+
+# Cut the dendrogram to obtain 2 clusters using complete linkage
+complete_clusters <- cutree(hclust_result_complete, k = 2)
+
+# Cut the dendrogram to obtain 2 clusters using average linkage
+average_clusters <- cutree(hclust_result_average, k = 2)
+
+# Cut the dendrogram to obtain 2 clusters using single linkage
+single_clusters <- cutree(hclust_result_single, k = 2)
+
+# Adjust labels of the clusters
+complete_clusters <- ifelse(complete_clusters == 1, 2, 1)
+average_clusters <- ifelse(average_clusters == 1, 2, 1)
+single_clusters <- ifelse(single_clusters == 1, 2, 1)
+
+# Create a data frame with the cluster labels as predictors
+cluster_predictors_complete <- data.frame(Complete = complete_clusters)
+cluster_predictors_average <- data.frame(Average = average_clusters)
+cluster_predictors_single <- data.frame(Single = single_clusters)
+
+# Combine cluster predictors with the original data frame
+df_with_clusters_complete <- cbind(numeric_df, cluster_predictors_complete)
+df_with_clusters_average <- cbind(numeric_df, cluster_predictors_average)
+df_with_clusters_single <- cbind(numeric_df, cluster_predictors_single)
+
+# Split the data into training and test sets
+set.seed(1234)
+train_indices <- sample(1:nrow(df_with_clusters_complete), 0.75 * nrow(df_with_clusters_complete))
+train_data_complete <- df_with_clusters_complete[train_indices, ]
+test_data_complete <- df_with_clusters_complete[-train_indices, ]
+
+train_data_average <- df_with_clusters_average[train_indices, ]
+test_data_average <- df_with_clusters_average[-train_indices, ]
+
+train_data_single <- df_with_clusters_single[train_indices, ]
+test_data_single <- df_with_clusters_single[-train_indices, ]
+
+# Remove constant variables within groups
+train_data_complete <- train_data_complete[, apply(train_data_complete, 2, function(x) length(unique(x)) > 1)]
+train_data_average <- train_data_average[, apply(train_data_average, 2, function(x) length(unique(x)) > 1)]
+train_data_single <- train_data_single[, apply(train_data_single, 2, function(x) length(unique(x)) > 1)]
+
+# Train the model using Sales.cl as the response variable and cluster predictors (Complete Linkage)
+lda_model_complete <- lda(Sales.cl ~ ., data = train_data_complete)
+
+# Make predictions on the test set
+predictions_complete <- predict(lda_model_complete, newdata = test_data_complete)
+
+# Calculate classification error
+classification_error_complete <- mean(predictions_complete$class != test_data_complete$Sales.cl)
+
+# Print the classification error for Complete Linkage
+cat("Classification Error (Complete Linkage):", classification_error_complete, "\n")
+
+# Train the model using Sales.cl as the response variable and cluster predictors (Average Linkage)
+lda_model_average <- lda(Sales.cl ~ ., data = train_data_average)
+
+# Make predictions on the test set
+predictions_average <- predict(lda_model_average, newdata = test_data_average)
+
+# Calculate classification error
+classification_error_average <- mean(predictions_average$class != test_data_average$Sales.cl)
+
+# Print the classification error for Average Linkage
+cat("Classification Error (Average Linkage):", classification_error_average, "\n")
+
+# Train the model using Sales.cl as the response variable and cluster predictors (Single Linkage)
+lda_model_single <- lda(Sales.cl ~ ., data = train_data_single)
+
+# Make predictions on the test set
+predictions_single <- predict(lda_model_single, newdata = test_data_single)
+
+# Calculate classification error
+classification_error_single <- mean(predictions_single$class != test_data_single$Sales.cl)
+
+# Print the classification error for Single Linkage
+cat("Classification Error (Single Linkage):", classification_error_single, "\n")
+
+
+
+
+
+```
